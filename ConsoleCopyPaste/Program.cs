@@ -9,6 +9,7 @@ namespace ConsoleCopyPaste
     {
         static void Main(string[] args)
         {
+            const int NUM_OF_THREADS = 100;
             string srcPath = null, dstPath = null;
             if (!ParseArgs(args, ref srcPath, ref dstPath))
             {
@@ -22,11 +23,11 @@ namespace ConsoleCopyPaste
                 return;
             }
 
-            TaskQueue taskQueue = new TaskQueue(3);
+            TaskQueue taskQueue = new TaskQueue(NUM_OF_THREADS);
             CopyDirectory(srcPath, dstPath, taskQueue);
-            taskQueue.StartProcessing();
-            Console.ReadLine();
-            taskQueue.StopProcessing();
+            Console.ReadKey();
+            Console.WriteLine("Всего было скопировано: {0}",taskQueue.CopyCounter);
+            taskQueue.Dispose();
         }
 
         static bool ParseArgs(string[] args, ref string srcPath, ref string dstPath)
