@@ -7,13 +7,18 @@ namespace ConsoleCopyPaste
 {
     class Program
     {
+        private static int CopyCounter { get; set; } = 0;
+        private static int ThreadEnded { get; set; } = 0;
+        private static int TargetCount { get; set; } = 0;
+        private static object threadEndedLock = new object();
+        private static object CopyCounterLock = new object();
         static void Main(string[] args)
         {
             const int NUM_OF_THREADS = 100;
             string srcPath = null, dstPath = null;
             if (!ParseArgs(args, ref srcPath, ref dstPath))
             {
-                Console.WriteLine("Не верные входные данные");
+                Console.WriteLine("Использование:\t"+"ConsoleCopyPaste SourcePath DestinationPath");
                 return;
             }
 
@@ -22,11 +27,13 @@ namespace ConsoleCopyPaste
                 Console.WriteLine("Некорректные директории");
                 return;
             }
-
             TaskQueue taskQueue = new TaskQueue(NUM_OF_THREADS);
             CopyDirectory(srcPath, dstPath, taskQueue);
-            Console.ReadKey();
-            Console.WriteLine("Всего было скопировано: {0}",taskQueue.CopyCounter);
+            while (TargetCount != ThreadEnded)
+            {
+                Thread.Sleep(300);
+            }
+            Console.WriteLine("Всего файлов: {0}, удачно скопированно: {1}",TargetCount, CopyCounter);
             taskQueue.Dispose();
         }
 
@@ -47,6 +54,7 @@ namespace ConsoleCopyPaste
             Directory.CreateDirectory(dstPath);
             foreach (var filePath in files)
             {
+                TargetCount++;
                 taskQueue.EnqueueTask(() => CopyFile(filePath, dstPath + @"\" + Path.GetFileName(filePath)));
             }
 
@@ -58,8 +66,25 @@ namespace ConsoleCopyPaste
 
         static void CopyFile(string srcPath, string dstPath)
         {
-            File.Copy(srcPath, dstPath, true);
+            try
+            {
+                File.Copy(srcPath, dstPath, true);
+                lock (CopyCounterLock)
+                {
+                    CopyCounter++;
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+
             Console.WriteLine("Файл [" + srcPath + "] был скопирован в [" + dstPath + "]");
+            lock (threadEndedLock)
+            {
+                ThreadEnded++;
+            }
         }
+
     }
 }

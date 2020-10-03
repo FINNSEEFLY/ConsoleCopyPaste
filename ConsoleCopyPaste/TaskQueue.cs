@@ -14,8 +14,7 @@ namespace ConsoleCopyPaste
         private Queue<TaskDelegate> _taskPull;
         private List<Thread> _threadPull;
         private bool disposed = false;
-        private bool isProcessing = true;
-        public int CopyCounter { get; set; } = 0;
+        private bool isProcessing = false;
 
         public TaskQueue()
         {
@@ -32,61 +31,72 @@ namespace ConsoleCopyPaste
                 CreateThread();
             }
 
-            var processingThread = new Thread(Processing);
+            var processingThread = new Thread(ProcessingTasks);
             processingThread.Start();
         }
 
         public void EnqueueTask(TaskDelegate task)
         {
             _taskPull.Enqueue(task);
+            if (!isProcessing)
+            {
+                isProcessing = true;
+                new Thread(ProcessingTasks).Start();
+            }
         }
 
         public void Dispose()
         {
             if (disposed) return;
             disposed = true;
-            isProcessing = false;
         }
 
-        private void Processing()
+        private void ProcessingTasks()
         {
-            var downtimeCounter = 0;
-            var onceWorked = false;
-            while (isProcessing)
+            while (!disposed && _taskPull.Count != 0)
             {
-                if (_taskPull.Count == 0)
-                {
-                    if (onceWorked)
-                    {
-                        downtimeCounter++;
-                        if (downtimeCounter > 10)
-                        {
-                            downtimeCounter = 0;
-                            Thread.Sleep(5000);
-                        }
-                    }
-                    continue;
-                }
-                onceWorked = true;
                 var task = _taskPull.Dequeue();
                 Thread thread = null;
-                while (thread == null && isProcessing)
+                while (thread == null && !disposed)
                 {
                     thread = _threadPull.FirstOrDefault(x => x.ThreadState == ThreadState.Unstarted);
-                    if (thread == null) 
+                    if (thread == null)
+                    {
                         RestoreThreads();
+                    }
                     else
                         thread.Start(task);
                 }
             }
+            isProcessing = false;
+        }
+        
+        private void CreateThread()
+        {
+            _threadPull.Add(new Thread(ExecuteTask));
         }
 
+        private void ExecuteTask(object taskDelegate)
+        {
+            Console.WriteLine("Начал работу поток " + Thread.CurrentThread.ManagedThreadId);
+            var task =(TaskDelegate) taskDelegate;
+            task();
+            Console.WriteLine("Закончил работу поток " + Thread.CurrentThread.ManagedThreadId);
+        }
+       
         private void RestoreThreads()
         {
             var numOfThreads = _threadPull.RemoveAll(x => !x.IsAlive && x.ThreadState == ThreadState.Stopped);
             if (numOfThreads == 0)
             {
-                CreateThread();
+                try
+                {
+                    CreateThread();
+                }
+                catch
+                {
+                    Thread.Sleep(2000);
+                }
             }
             else
             {
@@ -96,20 +106,6 @@ namespace ConsoleCopyPaste
                 }
             }
         }
-
-        private void CreateThread()
-        {
-            var thread = new Thread(ExecuteTask);
-            _threadPull.Add(thread);
-        }
-
-        private void ExecuteTask(object taskDelegate)
-        {
-            Console.WriteLine("Начал работу поток " + Thread.CurrentThread.ManagedThreadId);
-            var task = (TaskDelegate) taskDelegate;
-            task();
-            CopyCounter++;
-            Console.WriteLine("Закончил работу поток " + Thread.CurrentThread.ManagedThreadId);
-        }
     }
+
 }
