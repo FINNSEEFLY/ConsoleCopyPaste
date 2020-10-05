@@ -34,6 +34,8 @@ namespace ConsoleCopyPaste
 
         public void EnqueueTask(TaskDelegate task)
         {
+            if (disposed)
+                throw new ObjectDisposedException(null);
             _taskPull.Enqueue(task);
             if (!isProcessing)
             {
@@ -73,7 +75,7 @@ namespace ConsoleCopyPaste
             _threadPull.Add(new Thread(ExecuteTask));
         }
 
-        private void ExecuteTask(object taskDelegate)
+        private static void ExecuteTask(object taskDelegate)
         {
             var task =(TaskDelegate) taskDelegate;
             task();

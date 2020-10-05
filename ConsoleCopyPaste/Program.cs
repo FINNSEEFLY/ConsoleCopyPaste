@@ -13,7 +13,7 @@ namespace ConsoleCopyPaste
         private static int TargetCount { get; set; } = 0;
         private static object threadEndedLock = new object();
         private static object CopyCounterLock = new object();
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             const int NUM_OF_THREADS = 100;
             string srcPath = null, dstPath = null;
@@ -28,8 +28,8 @@ namespace ConsoleCopyPaste
                 Console.WriteLine("Некорректные директории");
                 return;
             }
-            TaskQueue taskQueue = new TaskQueue(NUM_OF_THREADS);
-            DateTime time = DateTime.Now;
+            var taskQueue = new TaskQueue(NUM_OF_THREADS);
+            var time = DateTime.Now;
             CopyDirectory(srcPath, dstPath, taskQueue);
             while (TargetCount != ThreadEnded)
             {
@@ -40,7 +40,7 @@ namespace ConsoleCopyPaste
             taskQueue.Dispose();
         }
 
-        static bool ParseArgs(string[] args, ref string srcPath, ref string dstPath)
+        private static bool ParseArgs(string[] args, ref string srcPath, ref string dstPath)
         {
             if (args == null || args.Length != 2 || args[0] == null || args[0] == "" ||
                 args[1] == null || args[1] == "") return false;
@@ -49,7 +49,7 @@ namespace ConsoleCopyPaste
             return true;
         }
 
-        static void CopyDirectory(string srcPath, string dstPath, TaskQueue taskQueue)
+        private static void CopyDirectory(string srcPath, string dstPath, TaskQueue taskQueue)
         {
             var files = Directory.GetFiles(srcPath);
             var directories = Directory.GetDirectories(srcPath);
@@ -67,7 +67,7 @@ namespace ConsoleCopyPaste
             }
         }
 
-        static void CopyFile(string srcPath, string dstPath)
+        private static void CopyFile(string srcPath, string dstPath)
         {
             try
             {
@@ -82,7 +82,7 @@ namespace ConsoleCopyPaste
                 // ignored
             }
 
-            //Console.WriteLine("Файл [" + srcPath + "] был скопирован в [" + dstPath + "]");
+            Console.WriteLine("Файл [" + srcPath + "] был скопирован в [" + dstPath + "]");
             lock (threadEndedLock)
             {
                 ThreadEnded++;

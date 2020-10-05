@@ -8,7 +8,7 @@ namespace ConsoleCopyPaste
     
     public class TaskQueue : IDisposable
     {
-        private ConcurrentQueue<TaskDelegate> _taskPull;
+        private readonly ConcurrentQueue<TaskDelegate> _taskPull;
         private bool disposed = false;
         
         public TaskQueue(int numOfThreads)
@@ -19,9 +19,11 @@ namespace ConsoleCopyPaste
                 new Thread(ExecuteTasks).Start();
             }
         }
-
+        
         public void EnqueueTask(TaskDelegate task)
         {
+            if (disposed)
+                throw new ObjectDisposedException(null);
             _taskPull.Enqueue(task);
         }
 
@@ -31,12 +33,11 @@ namespace ConsoleCopyPaste
                 disposed = true;
         }
 
-        public void ExecuteTasks()
+        private void ExecuteTasks()
         {
-            TaskDelegate task;
             while (!disposed)
             {
-                _taskPull.TryDequeue(out task);
+                _taskPull.TryDequeue(out var task);
                 if (task == null)
                 {
                     Thread.Sleep(30);
