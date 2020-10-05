@@ -3,6 +3,7 @@ using System.IO;
 using System.Threading;
 
 
+
 namespace ConsoleCopyPaste
 {
     class Program
@@ -28,12 +29,14 @@ namespace ConsoleCopyPaste
                 return;
             }
             TaskQueue taskQueue = new TaskQueue(NUM_OF_THREADS);
+            DateTime time = DateTime.Now;
             CopyDirectory(srcPath, dstPath, taskQueue);
             while (TargetCount != ThreadEnded)
             {
                 Thread.Sleep(300);
             }
             Console.WriteLine("Всего файлов: {0}, удачно скопированно: {1}",TargetCount, CopyCounter);
+            Console.WriteLine("Затрачено времени: "+(DateTime.Now-time));
             taskQueue.Dispose();
         }
 
@@ -79,7 +82,7 @@ namespace ConsoleCopyPaste
                 // ignored
             }
 
-            Console.WriteLine("Файл [" + srcPath + "] был скопирован в [" + dstPath + "]");
+            //Console.WriteLine("Файл [" + srcPath + "] был скопирован в [" + dstPath + "]");
             lock (threadEndedLock)
             {
                 ThreadEnded++;
